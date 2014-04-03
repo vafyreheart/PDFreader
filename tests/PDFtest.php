@@ -35,6 +35,8 @@ try {
 		$PDF->open('TestPDFs/NationalBisonRange.pdf');
 	else if ($_GET['page'] == 7)
 		$PDF->open('TestPDFs/DIRECT_DISH_09142010.pdf');
+	else if ($_GET['page'] == 8)
+		$PDF->open('TestPDFs/encrypted.pdf');
 	else
 		$PDF->open('TestPDFs/pdf_that_does_not_work.pdf');
 		
