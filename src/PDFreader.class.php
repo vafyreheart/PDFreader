@@ -313,6 +313,16 @@ class PDFreader extends PDFbase
             echo "<br />\n";
         }
 
+        //ENCRYPT If trailer indicates Encrypted file, warn user
+        //$this->trailers is multi-dimensional, so loop through it
+        foreach ($this->trailers as $trailer) {
+	        if (isset($trailer['Encrypt'])) {
+	            throw new PDFexception('Encrypted file detected. 
+	                Encryption is not supported in this version of PDFreader'
+	            );
+	        }
+        }
+        
         //PAGE TREE
         $this->iterations = 0; //Set the failsafe in preparation for readPageTree
         $pageString = $this->extractObject($this->root['Pages']);
@@ -518,13 +528,6 @@ class PDFreader extends PDFbase
             echo "<br />\n";
         }
         
-        //If trailer indicates Encrypted file, warn user
-//         if (isset($trailer['Encrypt'])) {
-//             throw new PDFexception('Encrypted file detected. 
-//                 Encryption is not supported in this version of PDFreader'
-//             );
-//         }
-
         //Determine if there's another xref table.
         //(Multiple xref tables can appear in a linearized PDF)
         if (isset($trailer['Prev'])) {
