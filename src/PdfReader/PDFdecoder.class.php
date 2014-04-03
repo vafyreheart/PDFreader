@@ -102,16 +102,16 @@ class PDFdecoder extends PDFbase
             case '/JBIG2Decode':
             case '/DCTDecode':
             case '/JPXDecode':
-                Throw new PDFexception('Filter Error:
+                throw new PDFexception('Filter Error:
                     Graphic filter specified.
                     This software supports text extraction only.'
                 );
                 break;
             case '/Crypt':
-                Throw new PDFexception('Filter Error: Encryption not supported.');
+                throw new PDFexception('Filter Error: Encryption not supported.');
                 break;
             default:
-                Throw new PDFexception('Filter Error: Unknown filter specified.');
+                throw new PDFexception('Filter Error: Unknown filter specified.');
                 break;
             }
         }//Close foreach $filter
@@ -167,7 +167,7 @@ class PDFdecoder extends PDFbase
             $decoded = $buffer;
             break;
         case 2: //TIFF prediction
-            Throw new PDFexception('Unprediction error:
+            throw new PDFexception('Unprediction error:
                 TIFF predictor not implemented.'
             );
             break;
@@ -175,7 +175,7 @@ class PDFdecoder extends PDFbase
             $decoded = $buffer;
             break;
         case 11: //PNG Sub prediction
-            Throw new PDFexception('Unprediction error:
+            throw new PDFexception('Unprediction error:
                 PNG Sub predictor not implemented.'
             );
             break;
@@ -201,22 +201,22 @@ class PDFdecoder extends PDFbase
             }
             break;
         case 13: //PNG Average prediction
-            Throw new PDFexception('Unprediction error:
+            throw new PDFexception('Unprediction error:
                 PNG Average predictor not implemented.'
             );
             break;
         case 14: //PNG Paeth prediction
-            Throw new PDFexception('Unprediction error:
+            throw new PDFexception('Unprediction error:
                 PNG Paeth predictor not implemented.'
             );
             break;
         case 15: //Optimal prediction
-            Throw new PDFexception('Unprediction error:
+            throw new PDFexception('Unprediction error:
                 PNG Optimal predictor not implemented.'
             );
             break;
         default:
-            Throw new PDFexception('Unprediction error: Unknown prediction filter.');
+            throw new PDFexception('Unprediction error: Unknown prediction filter.');
             break;
         }//Close switch
 
@@ -258,7 +258,7 @@ class PDFdecoder extends PDFbase
                 $workingString .= $stringToken;
             }
         } else { //Unknown string type
-            Throw new PDFexception('Error: Unknown string token type.');
+            throw new PDFexception('Error: Unknown string token type.');
         }
 
         //Check for and replace embedded hex strings
@@ -433,7 +433,7 @@ class PDFdecoder extends PDFbase
 
         //Check for End Of Data marker
         if ($data[strlen($data)-1] != '>') {
-            Throw new PDFexception('Unable to decode. ASCII Hex EOD marker not found.');
+            throw new PDFexception('Unable to decode. ASCII Hex EOD marker not found.');
         }
 
         //Chop off EOD marker
@@ -475,7 +475,7 @@ class PDFdecoder extends PDFbase
             } else if ($charCode >= 0x61 /*'a'*/ && $charCode <= 0x66 /*'f'*/) {
                 $code = $charCode - 0x57/*0x61 - 0x0A*/;
             } else {
-                Throw new PDFexception('Invalid character in ASCII Hex stream');
+                throw new PDFexception('Invalid character in ASCII Hex stream');
             }
 
             if ($oddCode) {//$i is odd. Store hex digit for next pass
@@ -516,7 +516,7 @@ class PDFdecoder extends PDFbase
 
         //Check for End of Data (EOD) marker
         if (substr($data, -2) != '~>') {
-            Throw new PDFexception('Unable to decode. ASCII 85 EOD marker not found.');
+            throw new PDFexception('Unable to decode. ASCII 85 EOD marker not found.');
         }
 
         $data = substr($data, 0, -2); //Chop off EOD marker
@@ -621,14 +621,14 @@ class PDFdecoder extends PDFbase
             $header = "\x1F\x8B\x08\x00\x00\x00\x00\x00\x00\x00";
             $file = fopen('.tmp.gz', 'wb');
             if (!$file) {
-                Throw new PDFexception('Error writing temporary zip file.');
+                throw new PDFexception('Error writing temporary zip file.');
             }
             fwrite($file, $header);
             fwrite($file, substr($data, 2));
             fclose($file);
             return `gzip -cdq .tmp.gz`;
         } else {
-            Throw new PDFexception('Extraction error: Can\'t unzip your file.');
+            throw new PDFexception('Extraction error: Can\'t unzip your file.');
         }
     }//End inflate
 

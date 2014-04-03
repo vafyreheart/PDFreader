@@ -85,7 +85,7 @@ class PDFbase
             echo 'Entered extractObject - ';
         }
         if (!isset($this->fh)) {
-            Throw new PDFexception('Error: invalid file handle');
+            throw new PDFexception('Error: invalid file handle');
         }
 
         //Determine the object reference's offset
@@ -111,7 +111,7 @@ class PDFbase
                 }
             }
             if (!$objectFound) {
-                Throw new PDFexception("Error: Object $reference not found.\n");
+                throw new PDFexception("Error: Object $reference not found.\n");
             }
         }
         if ($this->debugLevel > self::DEBUG_HIDE_EXTRACTION) {
@@ -155,7 +155,7 @@ class PDFbase
             echo "Entered extractDictionary<br />\n";
         }
         if (++$this->iterations > self::MAX_ITERATIONS) { //Recursion failsafe
-            Throw new PDFexception('Dictionary Overflow Error');
+            throw new PDFexception('Dictionary Overflow Error');
         }
         //Strip off the << and anything before it
         $dictString = substr($dictString, strpos($dictString, '<<')+2);
@@ -480,7 +480,7 @@ class PDFbase
             echo "Entered extractObjectStream<br />\n";
         }
         if (++$this->iterations > self::MAX_ITERATIONS) { //Recursion failsafe
-            Throw new PDFexception('Object Stream Overflow Error');
+            throw new PDFexception('Object Stream Overflow Error');
         }
         $objectArray = array();
 
@@ -494,7 +494,7 @@ class PDFbase
 
         //Get the references and byte offsets (i.e. all data before ['First'])
         if (!isset($objectStream['Dictionary']['First'])) {
-            Throw new PDFexception('Object Stream Error:
+            throw new PDFexception('Object Stream Error:
                 "First" dictionary entry missing'
             );
         }
@@ -548,7 +548,7 @@ class PDFbase
             echo "Entered extractArray<br />\n";
         }
         if (++$this->iterations > self::MAX_ITERATIONS) { //Recursion failsafe
-            Throw new PDFexception('Array Overflow Error');
+            throw new PDFexception('Array Overflow Error');
         }
 
         $arrayString = substr($arrayString, 1, -1); //Strip [ and ] or ` and `

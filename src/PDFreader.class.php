@@ -132,7 +132,7 @@ class PDFreader extends PDFbase
         }
 
         if ($startPage > $endPage) {
-            Throw new PDFexception('Error: Start page can\'t be after End page.
+            throw new PDFexception('Error: Start page can\'t be after End page.
                 Please select different pages.'
             );
         }
@@ -142,7 +142,7 @@ class PDFreader extends PDFbase
         $this->filepath = $filepath;
         $this->fh = fopen($filepath, 'rb');
         if ($this->fh === false) {
-            Throw new PDFexception('Error: Can\'t open your PDF file.');
+            throw new PDFexception('Error: Can\'t open your PDF file.');
         }
 
         /*
@@ -219,13 +219,13 @@ class PDFreader extends PDFbase
         }
         
         if (count($this->pageTree['Kids']) < 1) {
-            Throw new PDFexception('Error: No pages found in document.');
+            throw new PDFexception('Error: No pages found in document.');
         }
 
         //Extract the single page the user requested
         $page = $this->createOnePage($pageNum);
         if (empty($page->tokens)) {
-            Throw new PDFexception("No text found on page $pageNum.");
+            throw new PDFexception("No text found on page $pageNum.");
         }
 
         $textArray = array();
@@ -341,7 +341,7 @@ class PDFreader extends PDFbase
             echo 'Entered readXrefs - ';
         }
         if (++$this->iterations > self::MAX_ITERATIONS) { //Recursion failsafe
-            Throw new PDFexception('XRef Overflow Error');
+            throw new PDFexception('XRef Overflow Error');
         }
 
         //Find out where the primary startxref table starts.
@@ -353,7 +353,7 @@ class PDFreader extends PDFbase
             $startxref = strstr($buffer, 'startxref');
             //startxref table was not found. Notify the user.
             if ($startxref === false) {
-                Throw new PDFexception('Error: Unable to read PDF file.
+                throw new PDFexception('Error: Unable to read PDF file.
                     Your file may be damaged.'
                 );
             }
@@ -509,7 +509,7 @@ class PDFreader extends PDFbase
 
             $this->trailers[] = $trailer;
         } else { /* NO XREF FOUND */
-            Throw new PDFexception('Error: Unable to find XRef table.');
+            throw new PDFexception('Error: Unable to find XRef table.');
         }
 
         if ($this->debugLevel > self::DEBUG_HIDE_STRUCTURE) {
@@ -519,11 +519,11 @@ class PDFreader extends PDFbase
         }
         
         //If trailer indicates Encrypted file, warn user
-        if (isset($trailer['Encrypt'])) {
-            Throw new PDFexception('Encrypted file detected. 
-                Encryption is not supported in this version of PDFreader'
-            );
-        }
+//         if (isset($trailer['Encrypt'])) {
+//             throw new PDFexception('Encrypted file detected. 
+//                 Encryption is not supported in this version of PDFreader'
+//             );
+//         }
 
         //Determine if there's another xref table.
         //(Multiple xref tables can appear in a linearized PDF)
@@ -575,7 +575,7 @@ class PDFreader extends PDFbase
             echo "Entered readPageTree<br />\n";
         }
         if (++$this->iterations > self::MAX_ITERATIONS) { //Recursion failsafe
-            Throw new PDFexception('Page Tree Overflow Error');
+            throw new PDFexception('Page Tree Overflow Error');
         }
 
         $pageArray = $this->extractDictionary($pageString);
@@ -615,7 +615,7 @@ class PDFreader extends PDFbase
         }
         
         if (++$this->iterations > self::MAX_ITERATIONS) {
-            Throw new PDFexception('Create Pages Overflow Error');
+            throw new PDFexception('Create Pages Overflow Error');
         }
    
         foreach ($pageTree['Kids'] as $reference=>$pageDictionary) {
@@ -633,7 +633,7 @@ class PDFreader extends PDFbase
         }
 
         if (count($this->pages) < 1) {
-            Throw new PDFexception('Error: No content found on pages.');
+            throw new PDFexception('Error: No content found on pages.');
         }
 
         return;
@@ -703,7 +703,7 @@ class PDFreader extends PDFbase
             echo "Entered readTextStrings<br />\n";
         }
         if (count($this->pageTree['Kids']) < 1) {
-            Throw new PDFexception('Error: No pages found in document.');
+            throw new PDFexception('Error: No pages found in document.');
         }
 
         $this->createPages($this->pageTree);
@@ -741,7 +741,7 @@ class PDFreader extends PDFbase
             echo "Entered readFormFields<br />\n";
         }
         if (empty($this->root['AcroForm'])) {
-            Throw new PDFexception('Error: No forms found in document.');
+            throw new PDFexception('Error: No forms found in document.');
         }
 
         //Assemble all the annotation dictionaries into one,
