@@ -1,6 +1,7 @@
 <?php
+namespace PdfReader;
 /**
- * PDFpage.class.php contains high-level Page attributes and
+ * PdfPage.class.php contains high-level Page attributes and
  * instantiates an array of PDF objects that make up the page
  *
  * PHP version 5.1
@@ -13,9 +14,6 @@
  * @link      http://heartofthefyre.us/PDFreader/index.php
  */
 
-require_once 'PDFbase.class.php';
-require_once 'PDFobject.class.php';
-
 /**
  * I include one class per file, so the file description is the class's description.
  *
@@ -27,7 +25,7 @@ require_once 'PDFobject.class.php';
  * @version   Release: 0.1.6
  * @link      http://heartofthefyre.us/PDFreader/index.php
  */
-class PDFpage extends PDFbase
+class PdfPage extends PdfBase
 {
     /*************
     * PROPERTIES *
@@ -79,18 +77,18 @@ class PDFpage extends PDFbase
      *
      * @param resource $fh             - the file handle from the PDFreader class
      * @param array    $Xrefs          - the XRef table from the PDFreader class
-     * @param object   $PDFdecoder     - the PDFdecoder instance from the PDFreader class
+     * @param object   $PdfDecoder     - the PdfDecoder instance from the PDFreader class
      * @param array    $pageDictionary - an array of PDF page attributes
      * @param string   $ref            - an optional PDF reference to this object
      *
      * @return N/A
      */
-    public function __construct($fh, $Xrefs, $PDFdecoder, $pageDictionary, $ref)
+    public function __construct($fh, $Xrefs, $PdfDecoder, $pageDictionary, $ref)
     {
         parent::__construct();
         $this->fh = $fh;
         $this->Xrefs = $Xrefs;
-        $this->PDFdecoder = $PDFdecoder;
+        $this->PdfDecoder = $PdfDecoder;
 
         if ($this->debugLevel > self::DEBUG_OFF) {
             echo "<strong><u>CREATING PAGE $ref</u></strong><br />\n";
@@ -98,19 +96,19 @@ class PDFpage extends PDFbase
 
         //Set required PDF attributes
         if (!isset($pageDictionary['Parent'])) {
-            Throw new PDFexception('Error: Page parent could not be determined.');
+            Throw new PdfException('Error: Page parent could not be determined.');
         }
         $this->Parent = $pageDictionary['Parent'];
         if (!isset($pageDictionary['Resources'])) {
-            Throw new PDFexception('Error: Page resources could not be found.');
+            Throw new PdfException('Error: Page resources could not be found.');
         }
         $this->Resources = $this->extractResources($pageDictionary['Resources']);
         if (!isset($pageDictionary['MediaBox'])) {
-            Throw new PDFexception('Error: Page MediaBox could not be determined.');
+            Throw new PdfException('Error: Page MediaBox could not be determined.');
         }
         $this->MediaBox = $pageDictionary['MediaBox'];
         if (!isset($pageDictionary['Contents'])) {
-            Throw new PDFexception('Error: Page contents could not be found.');
+            Throw new PdfException('Error: Page contents could not be found.');
         }
         $this->Contents = $pageDictionary['Contents'];
 
@@ -272,8 +270,8 @@ class PDFpage extends PDFbase
         //Create PHP objects for each PDF object
         $contentObjects = array();
         foreach ($Contents as $contentRef) {
-            $contentObjects[] = new PDFobject(
-                $this->fh, $this->Xrefs, $this->PDFdecoder,
+            $contentObjects[] = new PdfObject(
+                $this->fh, $this->Xrefs, $this->PdfDecoder,
                 $contentRef, $this->Resources
             );
         }
@@ -313,7 +311,7 @@ class PDFpage extends PDFbase
             preg_match_all($pattern, $token, $textObjects);
             foreach ($textObjects[0] as $textObj) {
                 if (!empty($textObj)) {
-                    $currentToken .= $this->PDFdecoder->mapFont(
+                    $currentToken .= $this->PdfDecoder->mapFont(
                         $this->Resources['Font'], $textObj,
                         $this->Xrefs
                     );
@@ -507,5 +505,5 @@ class PDFpage extends PDFbase
         return $decodedString;
     }//End processTextMatrix
 
-}//End PDFpage class
+}//End PdfPage class
 ?>

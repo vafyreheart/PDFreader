@@ -32,7 +32,7 @@ try {
     $PDF->open('/path/to/PDF/File/example.pdf');
     $text = $PDF->readText();
 }
-catch(PDFexception $e) {
+catch(PdfException $e) {
     echo '<p style="color: #FF0000; font-weight: bold; text-align: center;">';
     echo "$e</p>\n";
 }

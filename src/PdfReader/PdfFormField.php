@@ -1,6 +1,7 @@
 <?php
+namespace PdfReader;
 /**
- * PDFformfield.class.php represents PDF form fields of any type, and
+ * PdfFormfield.class.php represents PDF form fields of any type, and
  * extracts the key and value from the field.
  *
  * PHP version 5.1
@@ -13,9 +14,6 @@
  * @link      http://heartofthefyre.us/PDFreader/index.php
  */
 
-require_once 'PDFbase.class.php';
-require_once 'PDFdecoder.class.php';
-
 /**
  * I include one class per file, so the file description is the class's description.
  *
@@ -27,7 +25,7 @@ require_once 'PDFdecoder.class.php';
  * @version   Release: 0.1.6
  * @link      http://heartofthefyre.us/PDFreader/index.php
  */
-class PDFformfield extends PDFbase
+class PdfFormfield extends PdfBase
 {
     /*************
     * PROPERTIES *
@@ -84,22 +82,22 @@ class PDFformfield extends PDFbase
      *
      * @param resource $fh         - the file handle created by the PDFreader class
      * @param array    $Xrefs      - the XRef table extracted by the PDFreader class
-     * @param object   $PDFdecoder - the PDFdecoder from the PDFreader class
+     * @param object   $PdfDecoder - the PdfDecoder from the PDFreader class
      * @param string   $reference  - the PDF reference to this object
      * @param object   $parent     - an optional form field object that is
      *     the parent of this object
      *
      * @return N/A
      */
-    public function __construct($fh, $Xrefs, $PDFdecoder, $reference, $parent=null)
+    public function __construct($fh, $Xrefs, $PdfDecoder, $reference, $parent=null)
     {
         parent::__construct();
         $this->fh = $fh;
         $this->Xrefs = $Xrefs;
-        $this->PDFdecoder = $PDFdecoder;
+        $this->PdfDecoder = $PdfDecoder;
 
         if (empty($reference)) {
-            Throw new PDFexception('Field creation error: Invalid field reference');
+            Throw new PdfException('Field creation error: Invalid field reference');
         }
         if ($this->debugLevel > self::DEBUG_OFF) {
             echo "<strong><u>Creating form field $reference</u></strong><br />\n";
@@ -116,7 +114,7 @@ class PDFformfield extends PDFbase
             if (isset($parent)) { //Field type is inheritable
                 $this->FT = $parent->getFieldType();
             } else if (!isset($fieldDictionary['Kids'])) { //FT may be set on children
-                Throw new PDFexception('Field creation error:
+                Throw new PdfException('Field creation error:
                     Field type could not be determined.'
                 );
             }
@@ -222,7 +220,7 @@ class PDFformfield extends PDFbase
 
         //If string is hex-encoded, decode it
         if (preg_match('/\\<[0-9A-F]+\\>/i', $name)) {
-            $name = $this->PDFdecoder->decodeHexString($name);
+            $name = $this->PdfDecoder->decodeHexString($name);
         }
         
         //Encode text as UTF-8
@@ -344,8 +342,8 @@ class PDFformfield extends PDFbase
         }
 
         foreach ($this->Kids as $childRef) {
-            $this->children[] = new PDFformfield(
-                $this->fh, $this->Xrefs, $this->PDFdecoder,
+            $this->children[] = new PdfFormfield(
+                $this->fh, $this->Xrefs, $this->PdfDecoder,
                 $childRef, $this
             );
         }
@@ -381,7 +379,7 @@ class PDFformfield extends PDFbase
         } else if ($this->value[0] == '/') {
             $this->value = substr($this->value, 1);     //Strip / from name objects
         }
-        $this->value = $this->PDFdecoder->unescapeString($this->value);
+        $this->value = $this->PdfDecoder->unescapeString($this->value);
     
         
         //Check for Radio Buttons/Checkboxes and map against Opt entry
@@ -394,5 +392,5 @@ class PDFformfield extends PDFbase
 
         return;
     }//End determineValue
-}//End PDFformfield class
+}//End PdfFormfield class
 ?>

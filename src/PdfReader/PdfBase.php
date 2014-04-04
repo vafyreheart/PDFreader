@@ -1,6 +1,7 @@
 <?php
+namespace PdfReader;
 /**
- * PDFbase.class.php sets up the PDF parsing environment and contains methods for
+ * PdfBase.class.php sets up the PDF parsing environment and contains methods for
  * extracting complex data types. It is the parent of all other PDF Reader
  * classes.
  *
@@ -14,8 +15,6 @@
  * @link      http://heartofthefyre.us/PDFreader/index.php
  */
 
-require_once 'PDFexception.class.php';
-
 /**
  * I include one class per file, so the file description is the class's description.
  *
@@ -27,7 +26,7 @@ require_once 'PDFexception.class.php';
  * @version   Release: 0.1.6
  * @link      http://heartofthefyre.us/PDFreader/index.php
  */
-class PDFbase
+class PdfBase
 {
     /*************
     * PROPERTIES *
@@ -54,7 +53,7 @@ class PDFbase
     protected $debugLevel = 0;
     protected $iterations = 0;
     protected $fh;
-    protected $PDFdecoder;
+    protected $PdfDecoder;
 
     /**********
     * METHODS *
@@ -85,7 +84,7 @@ class PDFbase
             echo 'Entered extractObject - ';
         }
         if (!isset($this->fh)) {
-            throw new PDFexception('Error: invalid file handle');
+            throw new PdfException('Error: invalid file handle');
         }
 
         //Determine the object reference's offset
@@ -111,7 +110,7 @@ class PDFbase
                 }
             }
             if (!$objectFound) {
-                throw new PDFexception("Error: Object $reference not found.\n");
+                throw new PdfException("Error: Object $reference not found.\n");
             }
         }
         if ($this->debugLevel > self::DEBUG_HIDE_EXTRACTION) {
@@ -155,7 +154,7 @@ class PDFbase
             echo "Entered extractDictionary<br />\n";
         }
         if (++$this->iterations > self::MAX_ITERATIONS) { //Recursion failsafe
-            throw new PDFexception('Dictionary Overflow Error');
+            throw new PdfException('Dictionary Overflow Error');
         }
         //Strip off the << and anything before it
         $dictString = substr($dictString, strpos($dictString, '<<')+2);
@@ -410,7 +409,7 @@ class PDFbase
                 );
             } else if ($dictionary[$key] == 'hexString') {
                 if ($key == 'Contents') {
-                    $dictionary[$key] = $this->PDFdecoder->decodeHexString(
+                    $dictionary[$key] = $this->PdfDecoder->decodeHexString(
                         $hexStringArray[0][$hexCounter++]
                     );
                 } else {
@@ -480,21 +479,21 @@ class PDFbase
             echo "Entered extractObjectStream<br />\n";
         }
         if (++$this->iterations > self::MAX_ITERATIONS) { //Recursion failsafe
-            throw new PDFexception('Object Stream Overflow Error');
+            throw new PdfException('Object Stream Overflow Error');
         }
         $objectArray = array();
 
         $objectStream = $this->extractStream($reference);
         $data = $objectStream['Contents'];
         if (isset($objectStream['Dictionary']['Filter'])) {
-            $data = $this->PDFdecoder->unfilter(
+            $data = $this->PdfDecoder->unfilter(
                 $objectStream['Dictionary']['Filter'], $data
             );
         }
 
         //Get the references and byte offsets (i.e. all data before ['First'])
         if (!isset($objectStream['Dictionary']['First'])) {
-            throw new PDFexception('Object Stream Error:
+            throw new PdfException('Object Stream Error:
                 "First" dictionary entry missing'
             );
         }
@@ -548,7 +547,7 @@ class PDFbase
             echo "Entered extractArray<br />\n";
         }
         if (++$this->iterations > self::MAX_ITERATIONS) { //Recursion failsafe
-            throw new PDFexception('Array Overflow Error');
+            throw new PdfException('Array Overflow Error');
         }
 
         $arrayString = substr($arrayString, 1, -1); //Strip [ and ] or ` and `
@@ -596,5 +595,5 @@ class PDFbase
 
         return $arrayArray;
     }//End extractArray
-}//End PDFbase class
+}//End PdfBase class
 ?>

@@ -1,6 +1,7 @@
 <?php
+namespace PdfReader;
 /**
- * PDFform.class.php represents a PDF form (AcroForm) and instantiates
+ * PdfForm.class.php represents a PDF form (AcroForm) and instantiates
  * a field object for each PDF form field.
  *
  * A given PDF file is considered to contain a single form, regardless
@@ -18,9 +19,6 @@
  * @link      http://heartofthefyre.us/PDFreader/index.php
  */
 
-require_once 'PDFbase.class.php';
-require_once 'PDFformfield.class.php';
-
 /**
  * I include one class per file, so the file description is the class's description.
  *
@@ -32,7 +30,7 @@ require_once 'PDFformfield.class.php';
  * @version   Release: 0.1.6
  * @link      http://heartofthefyre.us/PDFreader/index.php
  */
-class PDFform extends PDFbase
+class PdfForm extends PdfBase
 {
     /*************
     * PROPERTIES *
@@ -66,21 +64,21 @@ class PDFform extends PDFbase
      *
      * @param resource $fh          - the file handle created by the PDFreader class
      * @param array    $Xrefs       - the XRef table extracted by the PDFreader class
-     * @param object   $PDFdecoder  - the PDFdecoder from the PDFreader class
+     * @param object   $PdfDecoder  - the PdfDecoder from the PDFreader class
      * @param string   $reference   - the PDF reference to this object
      * @param array    $Annots      - array of references to annotation dictionaries
      *
      * @return N/A
      */
-    public function __construct($fh, $Xrefs, $PDFdecoder, $reference, $Annots)
+    public function __construct($fh, $Xrefs, $PdfDecoder, $reference, $Annots)
     {
         parent::__construct();
         $this->fh = $fh;
         $this->Xrefs = $Xrefs;
-        $this->PDFdecoder = $PDFdecoder;
+        $this->PdfDecoder = $PdfDecoder;
 
         if (!isset($reference)) {
-            Throw new PDFexception('Form creation error: Invalid form reference.');
+            Throw new PdfException('Form creation error: Invalid form reference.');
         }
         if ($this->debugLevel > self::DEBUG_OFF) {
             echo "<strong><u>CREATING FORM $reference</u></strong><br />\n";
@@ -91,7 +89,7 @@ class PDFform extends PDFbase
 
         //Set required PDF attributes
         if (!isset($formDictionary['Fields'])) {
-            Throw new PDFexception('Form creation error: No form fields found.');
+            Throw new PdfException('Form creation error: No form fields found.');
         }
         $this->Fields = $formDictionary['Fields'];
 
@@ -212,9 +210,9 @@ class PDFform extends PDFbase
 
         $this->formfields = array();
         foreach ($Fields as $fieldRef) {
-            $this->formfields[] = new PDFformfield(
+            $this->formfields[] = new PdfFormfield(
                 $this->fh, $this->Xrefs,
-                $this->PDFdecoder, $fieldRef
+                $this->PdfDecoder, $fieldRef
             );
         }
         $this->populateKeyValuePairs();
@@ -257,7 +255,7 @@ class PDFform extends PDFbase
 
 
     /**
-     * extractKeyValuePairs recursively walks through all PDFformfield objects
+     * extractKeyValuePairs recursively walks through all PdfFormfield objects
      * and their children to extract key/value pairs from them
      *
      * @param object $field - the field object to get keys and values from
@@ -270,7 +268,7 @@ class PDFform extends PDFbase
             echo "Entered extractKeyValuePairs<br />\n";
         }
         if (++$this->iterations > self::MAX_ITERATIONS) { //Recursion failsafe
-            Throw new PDFexception('Key/Value Overflow Error');
+            Throw new PdfException('Key/Value Overflow Error');
         }
 
         $fieldType = $field->getFieldType();
@@ -290,5 +288,5 @@ class PDFform extends PDFbase
 
         return;
     }//End extractKeyValuePairs
-}//End PDFform class
+}//End PdfForm class
 ?>

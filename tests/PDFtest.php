@@ -15,11 +15,11 @@ ini_set('display_errors', 1);
 ini_set('memory_limit', '2048M');
 set_time_limit(3600);
 
-require_once '../src/PDFreader.class.php';
+require_once '../vendor/autoload.php';
 //require_once 'buskirk/File/PDFreader.class.php';
 
 try {
-	$PDF = new PDFreader();
+	$PDF = new PdfReader\PdfReader();
 
 	if ($_GET['page'] == 1)
 		$PDF->open('TestPDFs/MAIDefinitionOfTerms.pdf');
@@ -46,7 +46,7 @@ try {
 	else
 		$textValues = $PDF->readText();
 }
-catch (PDFexception $e) {
+catch (PdfException $e) {
 	echo '<p class="errorMsg">'.$e.'</p>';
 }
 

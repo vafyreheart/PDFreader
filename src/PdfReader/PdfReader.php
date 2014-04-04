@@ -1,4 +1,5 @@
 <?php
+namespace PdfReader;
 /**
  * PDFreader.class.php is the control class that contains PDF reader's
  * public interface, parses a PDF document's control structures, and
@@ -52,11 +53,6 @@
  * @link      http://heartofthefyre.us/PDFreader/index.php
  */
 
-require_once 'PDFreader/PDFbase.class.php';
-require_once 'PDFreader/PDFdecoder.class.php';
-require_once 'PDFreader/PDFpage.class.php';
-require_once 'PDFreader/PDFform.class.php';
-
 /**
  * I include one class per file, so the file description is the class's description.
  *
@@ -68,7 +64,7 @@ require_once 'PDFreader/PDFform.class.php';
  * @version   Release: 0.1.6
  * @link      http://heartofthefyre.us/PDFreader/index.php
  */
-class PDFreader extends PDFbase
+class PdfReader extends PdfBase
 {
     /*************
     * PROPERTIES *
@@ -85,7 +81,9 @@ class PDFreader extends PDFbase
 
     //PHP Properties
     protected $pages;
-
+    protected $root;
+    protected $PDFdecrypter;
+    
     /**********
     * METHODS *
     ***********/
@@ -132,7 +130,7 @@ class PDFreader extends PDFbase
         }
 
         if ($startPage > $endPage) {
-            throw new PDFexception('Error: Start page can\'t be after End page.
+            throw new PdfException('Error: Start page can\'t be after End page.
                 Please select different pages.'
             );
         }
@@ -142,14 +140,14 @@ class PDFreader extends PDFbase
         $this->filepath = $filepath;
         $this->fh = fopen($filepath, 'rb');
         if ($this->fh === false) {
-            throw new PDFexception('Error: Can\'t open your PDF file.');
+            throw new PdfException('Error: Can\'t open your PDF file.');
         }
 
         /*
          * Now that we have a valid file handle,
-         * create the default PDFdecoder instance
+         * create the default PdfDecoder instance
          */
-        $this->PDFdecoder = new PDFdecoder($this->fh);
+        $this->PdfDecoder = new PdfDecoder($this->fh);
 
         return;
     }//End open
@@ -219,13 +217,13 @@ class PDFreader extends PDFbase
         }
         
         if (count($this->pageTree['Kids']) < 1) {
-            throw new PDFexception('Error: No pages found in document.');
+            throw new PdfException('Error: No pages found in document.');
         }
 
         //Extract the single page the user requested
         $page = $this->createOnePage($pageNum);
         if (empty($page->tokens)) {
-            throw new PDFexception("No text found on page $pageNum.");
+            throw new PdfException("No text found on page $pageNum.");
         }
 
         $textArray = array();
@@ -297,32 +295,44 @@ class PDFreader extends PDFbase
             echo "<br />\n";
         }
 
-        //ROOT
+        //ROOT ENCRYPT and ID
         $this->iterations = 0; //Set the failsafe for extractDictionary call
+        $encrypt = null;
+        $id = null;
         //$this->trailers is multi-dimensional, so loop through it
         foreach ($this->trailers as $trailer) {
             if (isset($trailer['Root'])) {
                 $rootString = $this->extractObject($trailer['Root']);
                 $this->root = $this->extractDictionary($rootString);
-                break; //Found the Root address. No need to keep looping
             }
+            if (isset($trailer['Encrypt'])) {
+	        	$encryptString = $this->extractObject($trailer['Encrypt']);
+	        	$encrypt = $this->extractDictionary($encryptString);
+	        	if ($encrypt['Filter'] != '/Standard' || $encrypt['R'] != '2' || $encrypt['V'] != '1') {
+		            throw new PdfException('Unsupported encrypted file detected.');
+	        	}
+            }
+        	if (isset($trailer['ID'])) {
+        		$id = $trailer['ID'];
+        		$id[0] = substr($id[0], 1, 32);
+        		$id[1] = substr($id[1], 1, 32);
+        	}
         }
         if ($this->debugLevel > self::DEBUG_HIDE_STRUCTURE) {
             echo '<strong>Root: </strong>';
             var_dump($this->root);
             echo "<br />\n";
+        	echo '<strong>Encrypt: </strong>';
+            var_dump($encrypt);
+            echo "<br />\n";
+        	echo '<strong>Id: </strong>';
+            var_dump($id);
+            echo "<br />\n";
+        }
+        if ($encrypt) {
+        	$this->PDFdecrypter = new PDFdecrypter($encrypt, $id);
         }
 
-        //ENCRYPT If trailer indicates Encrypted file, warn user
-        //$this->trailers is multi-dimensional, so loop through it
-        foreach ($this->trailers as $trailer) {
-	        if (isset($trailer['Encrypt'])) {
-	            throw new PDFexception('Encrypted file detected. 
-	                Encryption is not supported in this version of PDFreader'
-	            );
-	        }
-        }
-        
         //PAGE TREE
         $this->iterations = 0; //Set the failsafe in preparation for readPageTree
         $pageString = $this->extractObject($this->root['Pages']);
@@ -351,7 +361,7 @@ class PDFreader extends PDFbase
             echo 'Entered readXrefs - ';
         }
         if (++$this->iterations > self::MAX_ITERATIONS) { //Recursion failsafe
-            throw new PDFexception('XRef Overflow Error');
+            throw new PdfException('XRef Overflow Error');
         }
 
         //Find out where the primary startxref table starts.
@@ -363,7 +373,7 @@ class PDFreader extends PDFbase
             $startxref = strstr($buffer, 'startxref');
             //startxref table was not found. Notify the user.
             if ($startxref === false) {
-                throw new PDFexception('Error: Unable to read PDF file.
+                throw new PdfException('Error: Unable to read PDF file.
                     Your file may be damaged.'
                 );
             }
@@ -442,10 +452,10 @@ class PDFreader extends PDFbase
             //Chop off anything after 'endstream'
             $buffer = substr($buffer, 0, $trailer['Length']);
             if (isset($trailer['Filter'])) {
-                $buffer = $this->PDFdecoder->unfilter($trailer['Filter'], $buffer);
+                $buffer = $this->PdfDecoder->unfilter($trailer['Filter'], $buffer);
             }
             if (isset($trailer['DecodeParms'])) {
-                $buffer = $this->PDFdecoder->unpredict(
+                $buffer = $this->PdfDecoder->unpredict(
                     $buffer, $trailer['DecodeParms']
                 );
             }
@@ -519,7 +529,7 @@ class PDFreader extends PDFbase
 
             $this->trailers[] = $trailer;
         } else { /* NO XREF FOUND */
-            throw new PDFexception('Error: Unable to find XRef table.');
+            throw new PdfException('Error: Unable to find XRef table.');
         }
 
         if ($this->debugLevel > self::DEBUG_HIDE_STRUCTURE) {
@@ -578,7 +588,7 @@ class PDFreader extends PDFbase
             echo "Entered readPageTree<br />\n";
         }
         if (++$this->iterations > self::MAX_ITERATIONS) { //Recursion failsafe
-            throw new PDFexception('Page Tree Overflow Error');
+            throw new PdfException('Page Tree Overflow Error');
         }
 
         $pageArray = $this->extractDictionary($pageString);
@@ -618,7 +628,7 @@ class PDFreader extends PDFbase
         }
         
         if (++$this->iterations > self::MAX_ITERATIONS) {
-            throw new PDFexception('Create Pages Overflow Error');
+            throw new PdfException('Create Pages Overflow Error');
         }
    
         foreach ($pageTree['Kids'] as $reference=>$pageDictionary) {
@@ -629,14 +639,14 @@ class PDFreader extends PDFbase
             ) {
                 continue;
             } else {
-                $this->pages[] = new PDFpage($this->fh, $this->Xrefs,
-                    $this->PDFdecoder, $pageDictionary, $reference
+                $this->pages[] = new PdfPage($this->fh, $this->Xrefs,
+                    $this->PdfDecoder, $pageDictionary, $reference
                 );
             }
         }
 
         if (count($this->pages) < 1) {
-            throw new PDFexception('Error: No content found on pages.');
+            throw new PdfException('Error: No content found on pages.');
         }
 
         return;
@@ -671,8 +681,8 @@ class PDFreader extends PDFbase
                         if (++$i != $pageNum) {
                             continue;
                         }
-                        $page = new PDFpage($this->fh,
-                            $this->Xrefs, $this->PDFdecoder, $pageDict, $ref
+                        $page = new PdfPage($this->fh,
+                            $this->Xrefs, $this->PdfDecoder, $pageDict, $ref
                         );
                     }
                 }//Close inner foreach
@@ -684,8 +694,8 @@ class PDFreader extends PDFbase
                 if (++$i != $pageNum) {
                     continue;
                 }
-                $page = new PDFpage($this->fh, $this->Xrefs,
-                    $this->PDFdecoder, $pageDictionary, $reference
+                $page = new PdfPage($this->fh, $this->Xrefs,
+                    $this->PdfDecoder, $pageDictionary, $reference
                 );
             }
         }
@@ -706,7 +716,7 @@ class PDFreader extends PDFbase
             echo "Entered readTextStrings<br />\n";
         }
         if (count($this->pageTree['Kids']) < 1) {
-            throw new PDFexception('Error: No pages found in document.');
+            throw new PdfException('Error: No pages found in document.');
         }
 
         $this->createPages($this->pageTree);
@@ -744,7 +754,7 @@ class PDFreader extends PDFbase
             echo "Entered readFormFields<br />\n";
         }
         if (empty($this->root['AcroForm'])) {
-            throw new PDFexception('Error: No forms found in document.');
+            throw new PdfException('Error: No forms found in document.');
         }
 
         //Assemble all the annotation dictionaries into one,
@@ -761,8 +771,8 @@ class PDFreader extends PDFbase
         }
 
         $formFields = array();
-        $form = new PDFform(
-            $this->fh, $this->Xrefs, $this->PDFdecoder,
+        $form = new PdfForm(
+            $this->fh, $this->Xrefs, $this->PdfDecoder,
             $this->root['AcroForm'], $Annots
         );
         $formFields = $form->getKeyValuePairs();

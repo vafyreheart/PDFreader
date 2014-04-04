@@ -1,6 +1,7 @@
 <?php
+namespace PdfReader;
 /**
- * PDFexception.class.php is simply a package-specific implementation
+ * PdfException.class.php is simply a package-specific implementation
  * of PHP 5's standard Exception class
  *
  * PHP version 5
@@ -24,7 +25,7 @@
  * @version   Release: 0.1.6
  * @link      http://heartofthefyre.us/PDFreader/index.php
  */
-class PDFexception extends Exception
+class PdfException extends Exception
 {
     /*************
     * PROPERTIES *
@@ -58,5 +59,5 @@ class PDFexception extends Exception
         return "PDFreader Exception: {$this->message}\n";
     }//End __toString
 
-}//End PDFexception class
+}//End PdfException class
 ?>

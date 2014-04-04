@@ -1,6 +1,7 @@
 <?php
+namespace PdfReader;
 /**
- * PDFobject.class.php dereferences and decodes PDF content stream objects.
+ * PdfObject.class.php dereferences and decodes PDF content stream objects.
  *
  * The class name is a bit of a misnomer, since this class doesn't
  * represent ANY PDF object, only content stream objects. Content streams
@@ -16,9 +17,6 @@
  * @link      http://heartofthefyre.us/PDFreader/index.php
  */
 
-require_once 'PDFbase.class.php';
-require_once 'PDFdecoder.class.php';
-
 /**
  * I include one class per file, so the file description is the class's description.
  *
@@ -30,7 +28,7 @@ require_once 'PDFdecoder.class.php';
  * @version   Release: 0.1.6
  * @link      http://heartofthefyre.us/PDFreader/index.php
  */
-class PDFobject extends PDFbase
+class PdfObject extends PdfBase
 {
     /*************
     * PROPERTIES *
@@ -73,21 +71,21 @@ class PDFobject extends PDFbase
      *
      * @param resource $fh          - the file handle created by the PDFreader class
      * @param array    $Xrefs       - the XRef table extracted by the PDFreader class
-     * @param object   $PDFdecoder  - the PDFdecoder from the PDFreader class
+     * @param object   $PdfDecoder  - the PdfDecoder from the PDFreader class
      * @param string   $reference   - a PDF reference to this object like %d %d R
      * @param string   $Resources   - the parent page's resource dictionary
      *
      * @return N/A
      */
-    public function __construct($fh, $Xrefs, $PDFdecoder, $reference, $Resources)
+    public function __construct($fh, $Xrefs, $PdfDecoder, $reference, $Resources)
     {
         parent::__construct();
         $this->fh = $fh;
         $this->Xrefs = $Xrefs;
-        $this->PDFdecoder = $PDFdecoder;
+        $this->PdfDecoder = $PdfDecoder;
 
         if (!isset($reference)) {
-            Throw new PDFexception('Error: Invalid object reference');
+            Throw new PdfException('Error: Invalid object reference');
         }
         if ($this->debugLevel > self::DEBUG_OFF) {
             echo "<strong>Creating content stream $reference</strong><br />\n";
@@ -193,13 +191,13 @@ class PDFobject extends PDFbase
             $this->DecodeParms = $streamDict['DecodeParms'];
         }
         if (isset($streamDict['F'])) {
-            Throw new PDFexception('External file resources are not supported');
+            Throw new PdfException('External file resources are not supported');
         }
         if (isset($streamDict['FFilter'])) {
-            Throw new PDFexception('External file resources are not supported');
+            Throw new PdfException('External file resources are not supported');
         }
         if (isset($streamDict['FDecodeParms'])) {
-            Throw new PDFexception('External file resources are not supported');
+            Throw new PdfException('External file resources are not supported');
         }
         if (isset($streamDict['DL'])) {
             $this->DL = $streamDict['DL'];
@@ -225,14 +223,14 @@ class PDFobject extends PDFbase
         $rawString = $this->stream;
         //Reverse compression filter
         if (isset($this->Filter)) {
-            $rawString = $this->PDFdecoder->unfilter($this->Filter, $rawString);
+            $rawString = $this->PdfDecoder->unfilter($this->Filter, $rawString);
             if ($this->debugLevel > self::DEBUG_HIDE_DECODING) {
                 echo "<strong>Unfiltered String:</strong> $rawString<br />\n";
             }
         }
         //Reverse prediction
         if (isset($this->DecodeParms['Predictor'])) {
-            $rawString = $this->PDFdecoder->unpredict(
+            $rawString = $this->PdfDecoder->unpredict(
                 $rawString, $this->DecodeParms
             );
             if ($this->debugLevel > self::DEBUG_HIDE_DECODING) {
@@ -245,5 +243,5 @@ class PDFobject extends PDFbase
         return;
     }//End decodeText
 
-}//End PDFobject class
+}//End PdfObject class
 ?>

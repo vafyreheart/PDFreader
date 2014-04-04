@@ -39,7 +39,7 @@ try {
 //	}
 
 }
-catch (PDFexception $e) {
+catch (PdfException $e) {
 	echo '<p class="errorMsg">'.$e.'</p>';
 }
 
