@@ -308,14 +308,15 @@ class PdfReader extends PdfBase
             if (isset($trailer['Encrypt'])) {
 	        	$encryptString = $this->extractObject($trailer['Encrypt']);
 	        	$encrypt = $this->extractDictionary($encryptString);
+				// TODO Review: Should extractDictionary extract objects within also? CP
+	        	$encrypt['O'] = $this->extractString($encrypt['O']);
+	        	$encrypt['U'] = $this->extractString($encrypt['U']);
 	        	if ($encrypt['Filter'] != '/Standard' || $encrypt['R'] != '2' || $encrypt['V'] != '1') {
 		            throw new PdfException('Unsupported encrypted file detected.');
 	        	}
             }
         	if (isset($trailer['ID'])) {
         		$id = $trailer['ID'];
-        		$id[0] = substr($id[0], 1, 32);
-        		$id[1] = substr($id[1], 1, 32);
         	}
         }
         if ($this->debugLevel > self::DEBUG_HIDE_STRUCTURE) {

@@ -534,6 +534,39 @@ class PdfBase
 
 
     /**
+     * extractString converts a PDFstring (delimited by '(...)') into a PHP string
+     *
+     * @param string $string - a string representing a PDFstring
+     *     Should be delimited by ( and )
+     *
+     * @return string the PHP string constructed from the PDF string
+     */
+    protected function extractString($string)
+    {
+    	$string = str_replace(
+    			array('\n', '\r', '\t', '\b', '\f', '\\', '\(', '\)'),
+    			array("\n", "\r", "\t", "\b", "\f", "\\",  '(', ')'),
+    			$string
+    	);
+    	return substr($string, 1, -1); //Strip ( and );
+    }
+    
+    /**
+     * extractHexString converts a PDFhexstring (delimited by '<...>') into a PHP integer
+     *
+     * @param string $string - a string representing a PDFhexstring
+     *     Should be delimited by < and >
+     *
+     * @return int the PHP integer constructed from the PDF hex string
+     */
+    protected Function extractHexString($string)
+    {
+    	$string = substr($string, 1, -1); //Strip < and >;
+    	$converter = sscanf($string, "%X");
+    	return $converter[0];
+    }
+    
+    /**
      * extractArray splits a string representing a PDFarray into a PHP array
      *
      * @param string $arrayString - a string representing a PDFarray
@@ -572,11 +605,11 @@ class PdfBase
             preg_match_all(
                 self::STRING_PATTERN, $arrayString, $tempArray
             );
+            //Put parens back
+            $entry = str_replace('OPENPAREN', '\\(', $entry);
+            $entry = str_replace('CLOSEPAREN', '\\)', $entry);
             foreach ($tempArray[0] as $entry) {
-                $entry = substr($entry, 1, -1); //Strip ( and );
-                //Put parens back
-                $entry = str_replace('OPENPAREN', '\\(', $entry);
-                $entry = str_replace('CLOSEPAREN', '\\)', $entry);
+                $entry = $this->extractString($entry);
                 $arrayArray[] = $entry;
             }
         } else if (preg_match(self::HEX_STRING_PATTERN, $arrayString)) {
@@ -584,9 +617,7 @@ class PdfBase
                 self::HEX_STRING_PATTERN, $arrayString, $tempArray
             );
             foreach ($tempArray[0] as $entry) {
-                $entry = substr($entry, 1, -1); //Strip < and >;
-                $converter = sscanf($entry, "%X");
-                $arrayArray[] = $converter[0];
+                $arrayArray[] = $this->extractHexString($entry);
             }
         } else if (preg_match($arrayPattern, $arrayString)) { //Array of arrays
         	preg_match_all($arrayPattern, $arrayString, $tempArray);
