@@ -566,7 +566,7 @@ class PdfBase
             preg_match_all(self::REF_PATTERN, $arrayString, $tempArray);
             $arrayArray = $tempArray[0];
         } else if (preg_match(self::STRING_PATTERN, $arrayString)) {
-            //Temporarily replace escaped parentheses
+        	//Temporarily replace escaped parentheses
             $arrayString = str_replace('\\(', 'OPENPAREN', $arrayString);
             $arrayString = str_replace('\\)', 'CLOSEPAREN', $arrayString);
             preg_match_all(
@@ -583,9 +583,13 @@ class PdfBase
             preg_match_all(
                 self::HEX_STRING_PATTERN, $arrayString, $tempArray
             );
-            $arrayArray = $tempArray[0];
+            foreach ($tempArray[0] as $entry) {
+                $entry = substr($entry, 1, -1); //Strip < and >;
+                $converter = sscanf($entry, "%X");
+                $arrayArray[] = $converter[0];
+            }
         } else if (preg_match($arrayPattern, $arrayString)) { //Array of arrays
-            preg_match_all($arrayPattern, $arrayString, $tempArray);
+        	preg_match_all($arrayPattern, $arrayString, $tempArray);
             foreach ($tempArray[0] as $entry) {
                 $arrayArray[] = $this->extractArray($entry);
             }
