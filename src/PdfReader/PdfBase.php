@@ -543,12 +543,9 @@ class PdfBase
      */
     protected function extractString($string)
     {
-    	$string = str_replace(
-    			array('\n', '\r', '\t', '\b', '\f', '\\', '\(', '\)'),
-    			array("\n", "\r", "\t", "\b", "\f", "\\",  '(', ')'),
-    			$string
-    	);
-    	return substr($string, 1, -1); //Strip ( and );
+    	$string = substr($string, 1, -1); //Strip ( and )
+    	$string = self::unescapeString($string);
+    	return $string; 
     }
     
     /**
@@ -630,5 +627,51 @@ class PdfBase
 
         return $arrayArray;
     }//End extractArray
+    
+    /**
+     * unescapeString standardizes line endings and translates escape characters
+     * PDF Spec 7.3.4
+     *
+     * @param string $escapedString - a string with escape sequences
+     *
+     * @return string $unescapedString - same string with escape sequences decoded
+     */
+    public static function unescapeString($escapedString)
+    {
+    	//Standardize line endings
+    	$unescapedString = str_replace("\r\n", "\n", $escapedString);
+    	$unescapedString = str_replace("\r", "\n", $unescapedString);
+    	//Convert octal characters
+    	$octalChars = array();
+    	preg_match_all(self::OCTAL_PATTERN, $unescapedString, $octalChars);
+    	foreach ($octalChars[0] as $octal) {
+    		//Strip leading slash and convert to decimal
+    		$charCode = octdec(substr($octal, 1));
+    		if ($charCode > 31 && $charCode < 256) { //Check for valid character code
+    			$char = chr(octdec($charCode));
+    			$unescapedString = str_replace($octal, $char, $unescapedString);
+    		} else { //Remove invalid characterss
+    			$unescapedString = str_replace($octal, '', $unescapedString);
+    		}
+    	}
+    	//Clean escape characters
+    	$unescapedString = str_replace('\\r\\n', "\n", $unescapedString); //CRLF
+    	$unescapedString = str_replace('\\n', "\n", $unescapedString); //newline
+    	$unescapedString = str_replace('\\r', "\r", $unescapedString); //carriage rtn
+    	$unescapedString = str_replace('\\t', "\t", $unescapedString); //tab
+    	$unescapedString = str_replace('\\b', '', $unescapedString); //backspace
+    	$unescapedString = str_replace('\\f', '', $unescapedString); //form feed
+    	$unescapedString = str_replace('\\(', '(', $unescapedString); //left paren
+    	$unescapedString = str_replace('\\)', ')', $unescapedString); //right paren
+    	//Convert literal backslashes to something more manageable
+    	$unescapedString = str_replace('\\', 'BACKSLASH', $unescapedString);
+    	//Replace double backslashes with a single
+    	$unescapedString = str_replace('BACKSLASHBACKSLASH', '\\', $unescapedString);
+    	//Remove all other backslashes
+    	$unescapedString = str_replace('BACKSLASH', '', $unescapedString);
+    
+    	return $unescapedString;
+    }//End unescapeString    
+    
 }//End PdfBase class
 ?>

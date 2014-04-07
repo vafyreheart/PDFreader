@@ -46,7 +46,7 @@ class PdfBaseTest extends PHPUnit_Framework_TestCase
 	*/
 	
 	public function testExtractString_WithEscapes_UnescapseString() {
-		$string = '(A\rB)';
+		$string = '(A\\rB)';
 		$base = new PdfBaseConcrete();
 		$result = $base->extractString($string);
 		$this->assertEquals("A\rB", $result);

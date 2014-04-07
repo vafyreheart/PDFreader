@@ -379,7 +379,7 @@ class PdfFormfield extends PdfBase
         } else if ($this->value[0] == '/') {
             $this->value = substr($this->value, 1);     //Strip / from name objects
         }
-        $this->value = $this->PdfDecoder->unescapeString($this->value);
+        $this->value = self::unescapeString($this->value);
     
         
         //Check for Radio Buttons/Checkboxes and map against Opt entry

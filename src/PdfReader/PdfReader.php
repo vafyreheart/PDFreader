@@ -82,7 +82,6 @@ class PdfReader extends PdfBase
     //PHP Properties
     protected $pages;
     protected $root;
-    protected $PDFdecrypter;
     
     /**********
     * METHODS *
@@ -143,15 +142,13 @@ class PdfReader extends PdfBase
             throw new PdfException('Error: Can\'t open your PDF file.');
         }
 
-        /*
-         * Now that we have a valid file handle,
-         * create the default PdfDecoder instance
-         */
-        $this->PdfDecoder = new PdfDecoder($this->fh);
-
         return;
     }//End open
 
+    protected function getPdfDecoder() {
+    	assert($this->PdfDecoder != null);
+    	return $this->PdfDecoder;
+    }
 
     /**
      * readText is the controller function that populates
@@ -330,9 +327,16 @@ class PdfReader extends PdfBase
             var_dump($id);
             echo "<br />\n";
         }
+        $decrypter = null;
         if ($encrypt) {
-        	$this->PDFdecrypter = new PDFdecrypter($encrypt, $id);
+        	$decrypter = new PDFdecrypter($encrypt, $id);
         }
+        
+        /*
+         * Now that we have a valid file handle,
+         * create the default PdfDecoder instance
+         */
+        $this->PdfDecoder = new PdfDecoder($this->fh, $decrypter);
 
         //PAGE TREE
         $this->iterations = 0; //Set the failsafe in preparation for readPageTree
@@ -641,7 +645,7 @@ class PdfReader extends PdfBase
                 continue;
             } else {
                 $this->pages[] = new PdfPage($this->fh, $this->Xrefs,
-                    $this->PdfDecoder, $pageDictionary, $reference
+                    $this->getPdfDecoder(), $pageDictionary, $reference
                 );
             }
         }
@@ -683,7 +687,7 @@ class PdfReader extends PdfBase
                             continue;
                         }
                         $page = new PdfPage($this->fh,
-                            $this->Xrefs, $this->PdfDecoder, $pageDict, $ref
+                            $this->Xrefs, $this->getPdfDecoder(), $pageDict, $ref
                         );
                     }
                 }//Close inner foreach
@@ -696,7 +700,7 @@ class PdfReader extends PdfBase
                     continue;
                 }
                 $page = new PdfPage($this->fh, $this->Xrefs,
-                    $this->PdfDecoder, $pageDictionary, $reference
+                    $this->getPdfDecoder(), $pageDictionary, $reference
                 );
             }
         }
@@ -773,7 +777,7 @@ class PdfReader extends PdfBase
 
         $formFields = array();
         $form = new PdfForm(
-            $this->fh, $this->Xrefs, $this->PdfDecoder,
+            $this->fh, $this->Xrefs, $this->getPdfDecoder(),
             $this->root['AcroForm'], $Annots
         );
         $formFields = $form->getKeyValuePairs();

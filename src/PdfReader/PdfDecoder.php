@@ -41,6 +41,8 @@ class PdfDecoder extends PdfBase
 
     protected $CMap; //The current CMap used to decode characters
 
+    protected $pdfDecrypter;
+    
     /**********
     * METHODS *
     ***********/
@@ -49,13 +51,15 @@ class PdfDecoder extends PdfBase
      * __construct populates standard encoding arrays
      *
      * @param resource $fh - file handle to the PDF file
+     * @param PdfDecrypter $pdfDecrypter - PdfDecrypter, can be null if document is not encrypted
      *
      * @return N/A
      */
-    public function __construct($fh)
+    public function __construct($fh, $pdfDecrypter)
     {
         parent::__construct();
         $this->fh = $fh;
+        $this->pdfDecrypter = $pdfDecrypter;
 
         if ($this->debugLevel > self::DEBUG_HIDE_DECODING) {
             echo "Created decoder<br />\n";
@@ -271,7 +275,7 @@ class PdfDecoder extends PdfBase
         }
 
         //Decode escaped characters
-        $workingString = $this->unescapeString($workingString);
+        $workingString = self::unescapeString($workingString);
 
         if ($this->debugLevel > self::DEBUG_HIDE_DECODING) {
             echo "<strong>Working token ($stringType): </strong>";
@@ -363,55 +367,6 @@ class PdfDecoder extends PdfBase
         return $decodedString;
     }//End mapFont
 
-
-    /**
-     * unescapeString standardizes line endings and translates escape characters
-     * PDF Spec 7.3.4
-     *
-     * @param string $escapedString - a string with escape sequences
-     *
-     * @return string $unescapedString - same string with escape sequences decoded
-     */
-    public function unescapeString($escapedString)
-    {
-        if ($this->debugLevel > self::DEBUG_HIDE_DECODING) {
-            echo "Entered unescapeString<br />\n";
-        }
-
-        //Standardize line endings
-        $unescapedString = str_replace("\r\n", "\n", $escapedString);
-        $unescapedString = str_replace("\r", "\n", $unescapedString);
-        //Convert octal characters
-        $octalChars = array();
-        preg_match_all(self::OCTAL_PATTERN, $unescapedString, $octalChars);
-        foreach ($octalChars[0] as $octal) {
-            //Strip leading slash and convert to decimal
-            $charCode = octdec(substr($octal, 1));
-            if ($charCode > 31 && $charCode < 256) { //Check for valid character code
-                $char = chr(octdec($charCode));
-                $unescapedString = str_replace($octal, $char, $unescapedString);
-            } else { //Remove invalid characterss
-                $unescapedString = str_replace($octal, '', $unescapedString);
-            }
-        }
-        //Clean escape characters
-        $unescapedString = str_replace('\\r\\n', "\n", $unescapedString); //CRLF
-        $unescapedString = str_replace('\\n', "\n", $unescapedString); //newline
-        $unescapedString = str_replace('\\r', "\n", $unescapedString); //carriage rtn
-        $unescapedString = str_replace('\\t', "\t", $unescapedString); //tab
-        $unescapedString = str_replace('\\b', '', $unescapedString); //backspace
-        $unescapedString = str_replace('\\f', '', $unescapedString); //form feed
-        $unescapedString = str_replace('\\(', '(', $unescapedString); //left paren
-        $unescapedString = str_replace('\\)', ')', $unescapedString); //right paren
-        //Convert literal backslashes to something more manageable
-        $unescapedString = str_replace('\\', 'BACKSLASH', $unescapedString);
-        //Replace double backslashes with a single
-        $unescapedString = str_replace('BACKSLASHBACKSLASH', '\\', $unescapedString);
-        //Remove all other backslashes
-        $unescapedString = str_replace('BACKSLASH', '', $unescapedString);
-
-        return $unescapedString;
-    }//End unescapeString
 
     /*********************************
      * COMPRESSION FILTER PROCESSORS *
