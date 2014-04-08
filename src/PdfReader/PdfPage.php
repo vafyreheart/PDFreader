@@ -435,20 +435,29 @@ class PdfPage extends PdfBase
         $matrixPattern = '|';
         for ($i=0; $i<6; $i++) {
             //Single int/float pattern
-            $matrixPattern .= '[0-9]+(\.[0-9]+)? ';
+            $matrixPattern .= '-?[0-9]+(\.[0-9]+)? ';
         }
         $matrixPattern .= 'Tm|';
         $operatorPattern = '| Tm|'; //Regex for text matrix operator
 
         //Walk through the file looking for text matrices
         $Sx = $sine1 = $sine2 = $Sy = $Tx = $Ty = null;
-        for ($i=0; $i<strlen($decodedString); $i++) {
+        $iProcessed = 0;
+        $c = strlen($decodedString);
+        for ($i = 0; $i < $c; $i++) {
             if ($decodedString[$i] == 'T' && $decodedString[$i-1] == ' ') {
-                switch ($decodedString[$i+1]) {
+                $tempString = substr($decodedString, $iProcessed, $i+2-$iProcessed);
+                $iProcessed = $i + 2;
+//                 var_dump($tempString); echo "<br/>";
+            	switch ($decodedString[$i+1]) {
                 case 'm': //Text Matrix
-                    $tempString = substr($decodedString, 0, $i+2);
                     $matrix = array();
-                    preg_match($matrixPattern, $tempString, $matrix);
+                    if (preg_match($matrixPattern, $tempString, $matrix) == 0) {
+                    	echo "Could not match text matrix '$tempString' with '$matrixPattern'<br/>";
+                    	continue;
+//                     } else {
+//                     	echo "match text matrix '$tempString'<br/>";
+                    }
                     sscanf(
                         $matrix[0], '%f %f %f %f %f %f Tm',
                         $Sx, $sine1, $sine2, $Sy, $Tx, $Ty
@@ -471,21 +480,23 @@ class PdfPage extends PdfBase
                      * 700 - 695 = 5. Current font size = 12;
                      * 5 < 12, so don't line break
                      */
-                    $Yoffset = $Ypos - $Ty;
-                    if ($Yoffset > $Sy) { //Add a line break
-                        $decodedString = preg_replace(
-                            $operatorPattern, ' T*', $decodedString, 1
-                        );
-                    } else {
-                        $decodedString = preg_replace(
-                            $operatorPattern, '', $decodedString, 1
-                        );
-                    }
+//                     $Yoffset = $Ypos - $Ty;
+//                     if ($Yoffset > $Sy) { //Add a line break
+//                         $decodedString = preg_replace(
+//                             $operatorPattern, ' T*', $decodedString, 1
+//                         );
+//                     } else {
+//                         $decodedString = preg_replace(
+//                             $operatorPattern, '', $decodedString, 1
+//                         );
+//                     }
 
                     //Reset parameters from new matrix
                     $fontSize = $Sy; //Y scale = font size
                     $Ypos = $Ty; //Y text position
                     break;
+                case 'f':
+                	break;
                 case 'd': //Line breaks
                 case 'D':
                 case '*':

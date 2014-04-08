@@ -442,9 +442,14 @@ class PdfBase
         if ($this->debugLevel > self::DEBUG_HIDE_EXTRACTION) {
             echo "Entered extractStream<br />\n";
         }
+        list($objectNumber, $generationNumber) = explode(' ', $reference);
+        $objectNumber = (int)$objectNumber;
+        $generationNumber = (int)$generationNumber;
+        
         $stream = array();
 
         $streamObj = $this->extractObject($reference);
+        var_dump('extracting stream ', $objectNumber, $generationNumber);
         $this->iterations = 0; //Reset iterations for extractDictionary call
         $stream['Dictionary'] = $this->extractDictionary($streamObj);
 
@@ -459,7 +464,7 @@ class PdfBase
         } else if (isset($stream['Dictionary']['Length'])) {
             $buffer = substr($buffer, 0, $stream['Dictionary']['Length']);
         }
-        $stream['Contents'] = $buffer;
+        $stream['Contents'] = $this->PdfDecoder->decrypt($objectNumber, $generationNumber, $buffer);
 
         return $stream;
     }//End extractStream
@@ -556,11 +561,22 @@ class PdfBase
      *
      * @return int the PHP integer constructed from the PDF hex string
      */
-    protected Function extractHexString($string)
+    protected Function extractHexString($hexString)
     {
-    	$string = substr($string, 1, -1); //Strip < and >;
-    	$converter = sscanf($string, "%X");
-    	return $converter[0];
+        if ($this->debugLevel > self::DEBUG_HIDE_DECODING) {
+            echo "Entered decodeHexString<br />\n";
+        }
+
+        $hexString = substr($hexString, 1, -1); //Strip off the < and >
+        $decodedString = '';
+        for ($i=0; $i<strlen($hexString); $i+=2) {
+            $hexChar = $ASCIIvalue = 0; //Reset variables to force garbage collection
+            $hexChar = $hexString[$i].$hexString[$i+1];
+            $ASCIIvalue = hexdec($hexChar);
+            $decodedString .= chr((int)$ASCIIvalue);
+        }
+
+        return $decodedString;
     }
     
     /**
@@ -603,8 +619,8 @@ class PdfBase
                 self::STRING_PATTERN, $arrayString, $tempArray
             );
             //Put parens back
-            $entry = str_replace('OPENPAREN', '\\(', $entry);
-            $entry = str_replace('CLOSEPAREN', '\\)', $entry);
+            $arrayString = str_replace('OPENPAREN', '\\(', $arrayString);
+            $arrayString = str_replace('CLOSEPAREN', '\\)', $arrayString);
             foreach ($tempArray[0] as $entry) {
                 $entry = $this->extractString($entry);
                 $arrayArray[] = $entry;

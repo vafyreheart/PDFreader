@@ -98,6 +98,8 @@ class PdfDecoder extends PdfBase
                 $decodedData = $this->ASCII85Decode($decodedData);
                 break;
             case '/LZWDecode': //LZW is similar to Flate. Try gunzip
+            	$decodedData = self::decodeFilterLZWDecode($decodedData);
+            	break;
             case '/FlateDecode':
                 $decodedData = $this->inflate($decodedData);
                 break;
@@ -586,6 +588,90 @@ class PdfDecoder extends PdfBase
         }
     }//End inflate
 
+    /**
+     * LZWDecode
+     * Decompresses data encoded using the LZW (Lempel-Ziv-Welch) adaptive compression method, reproducing the original text or binary data.
+     * Sourced from: http://www.tcpdf.org/
+     * @param $data (string) Data to decode.
+     * @return Decoded data string.
+     * @since 1.0.000 (2011-05-23)
+     * @public static
+     */
+    public static function decodeFilterLZWDecode($data) {
+    	// intialize string to return
+    	$decoded = '';
+    	// data length
+    	$data_length = strlen($data);
+    	// convert string to binary string
+    	$bitstring = '';
+    	for ($i = 0; $i < $data_length; ++$i) {
+    		$bitstring .= sprintf('%08b', ord($data{$i}));
+    	}
+    	// get the number of bits
+    	$data_length = strlen($bitstring);
+    	// initialize code length in bits
+    	$bitlen = 9;
+    	// initialize dictionary index
+    	$dix = 258;
+    	// initialize the dictionary (with the first 256 entries).
+    	$dictionary = array();
+    	for ($i = 0; $i < 256; ++$i) {
+    		$dictionary[$i] = chr($i);
+    	}
+    	// previous val
+    	$prev_index = 0;
+    	// while we encounter EOD marker (257), read code_length bits
+    	while (($data_length > 0) AND (($index = bindec(substr($bitstring, 0, $bitlen))) != 257)) {
+    		// remove read bits from string
+    		$bitstring = substr($bitstring, $bitlen);
+    		// update number of bits
+    		$data_length -= $bitlen;
+    		if ($index == 256) { // clear-table marker
+    			// reset code length in bits
+    			$bitlen = 9;
+    			// reset dictionary index
+    			$dix = 258;
+    			$prev_index = 256;
+    			// reset the dictionary (with the first 256 entries).
+    			$dictionary = array();
+    			for ($i = 0; $i < 256; ++$i) {
+    				$dictionary[$i] = chr($i);
+    			}
+    		} elseif ($prev_index == 256) {
+    			// first entry
+    			$decoded .= $dictionary[$index];
+    			$prev_index = $index;
+    		} else {
+    			// check if index exist in the dictionary
+    			if ($index < $dix) {
+    				// index exist on dictionary
+    				$decoded .= $dictionary[$index];
+    				$dic_val = $dictionary[$prev_index].$dictionary[$index]{
+    					0};
+    					// store current index
+    					$prev_index = $index;
+    			} else {
+    				// index do not exist on dictionary
+    				$dic_val = $dictionary[$prev_index].$dictionary[$prev_index]{
+    					0};
+    					$decoded .= $dic_val;
+    			}
+    			// update dictionary
+    			$dictionary[$dix] = $dic_val;
+    			++$dix;
+    			// change bit length by case
+    			if ($dix == 2047) {
+    				$bitlen = 12;
+    			} elseif ($dix == 1023) {
+    				$bitlen = 11;
+    			} elseif ($dix == 511) {
+    				$bitlen = 10;
+    			}
+    		}
+    	}
+    	return $decoded;
+    }
+    
     /***************************
      * CHARACTER MAP FUNCTIONS *
      ***************************/
@@ -1051,6 +1137,18 @@ class PdfDecoder extends PdfBase
             'U+00FC'=>'ü', 'U+00FD'=>'ý', 'U+00FE'=>'þ', 'U+00FF'=>'ÿ'
         );
     }//End populateEncoding
+    
+    /**
+     * decrypt - Decrypts the $rawString if required
+     *
+     * @return string - The decrypted $rawString
+     */
+    public function decrypt($objectId, $generationId, $rawString) {
+    	if ($this->pdfDecrypter != null) {
+    		return $this->pdfDecrypter->decrypt($objectId, $generationId, $rawString);
+    	}
+    	return $rawString;
+    }
 
 }//End PdfDecoder class
 ?>
