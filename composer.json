@@ -1,0 +1,27 @@
+{
+    "name": "sgw/pdfreader",
+    "description": "PDF reader",
+    "license": "BSD",
+    "authors": [
+        {
+            "name": "John M. Stokes",
+            "email": "jstokes@heartofthefyre.us"
+        },
+        {
+            "name": "Cambell Prince",
+            "email": "cambell.prince@gmail.com"
+        }
+    ],
+    "require": {
+
+    },
+    "require-dev": {
+        "phpunit/phpunit": "4.0.*"
+    },
+    "autoload": {
+		"psr-4": {
+			"PdfReader\\": "src/PdfReader/"
+		}
+	}
+    
+}

@@ -1,0 +1,5 @@
+tests/TestPDFs/encrypted.pdf
+
+/vendor/
+
+composer.lock
